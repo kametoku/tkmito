@@ -11,10 +11,17 @@
                "sxql"
                "tkutil")
   :components ((:module "src"
-                :components ((:file "db")
-                             (:file "model")
-                             (:file "search"))))
-  :description "Tiny Common Lisp Wrapper for Mito."
+                :components
+                ((:file "db")
+                 (:file "exception")
+                 (:file "model")
+                 (:file "search")
+                 (:module "mixin"
+                  :components
+                  ((:file "package")
+                   (:file "has-code")
+                   (:file "optimistic-lock"))))))
+  :description "Tiny Common Lisp Wrapper and Utilities for Mito."
   :in-order-to ((test-op (test-op "tkmito/tests"))))
 
 (defsystem "tkmito/tests"
