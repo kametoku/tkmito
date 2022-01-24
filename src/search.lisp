@@ -66,17 +66,32 @@ searched for.")
     (when expression
       (sxql:where expression))))
 
+(defgeneric midnight (date)
+  (:method ((date local-time:timestamp))
+    (local-time:encode-timestamp 0 0 0 0
+                                 (local-time:timestamp-day date)
+                                 (local-time:timestamp-month date)
+                                 (local-time:timestamp-year date)))
+  (:method ((date string))
+    (midnight (local-time:parse-timestring date))))
+
+(defun next-day (date &key (offset 1))
+  (local-time:adjust-timestamp (midnight date) (offset :day offset)))
+
 (defun where-date (date-column start-date end-date)
-  (when (tkutil:blankp start-date) (setf start-date nil))
-  (when (tkutil:blankp end-date) (setf end-date nil))
-  (cond ((tkutil:blankp date-column) nil)
-        ((and start-date end-date)
-         (sxql:where (:and (:>= date-column start-date)
-                           (:<= date-column end-date))))
-        (start-date
-         (sxql:where (:>= date-column start-date)))
-        (end-date
-         (sxql:where (:<= date-column end-date)))))
+  (when (tkutil:blankp date-column)
+    (return-from where-date))
+  (let ((start (unless (tkutil:blankp start-date)
+                 (midnight start-date)))
+        (end (unless (tkutil:blankp end-date)
+               (next-day (midnight end-date)))))
+    (cond ((and start end)
+           (sxql:where (:and (:>= date-column start)
+                             (:< date-column end))))
+          (start
+           (sxql:where (:>= date-column start)))
+          (end
+           (sxql:where (:< date-column end))))))
 
 (defun order-by (sort-column &optional sort-direction)
   (when sort-column
