@@ -7,7 +7,10 @@
            #:disconnect
            #:ensure-connection
            #:with-transaction
-           #:rollback))
+           #:rollback
+           #:execute
+           #:fetch
+           #:fetch-all))
 (in-package :tkmito.db)
 
 (defvar *config* nil)
@@ -40,3 +43,17 @@
 
 (defun rollback ()
   (dbi:rollback (connected-p)))
+
+(defgeneric execute (sql)
+  (:method ((sql string))
+    (let ((query (dbi:prepare mito:*connection* sql)))
+      (dbi:execute query)))
+  (:method ((sql sxql.statement:select-statement))
+    (execute (sxql:yield sql))))
+
+(defun fetch (result)
+  (dbi:fetch result))
+
+(defun fetch-all (result)
+  (dbi:fetch-all result))
+
