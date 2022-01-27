@@ -9,7 +9,8 @@
                "log4cl"
                "mito"
                "sxql"
-               "tkutil")
+               "tkutil"
+               "uuid")
   :components ((:module "src"
                 :components
                 ((:file "db")
