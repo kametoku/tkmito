@@ -38,7 +38,7 @@
 
 (defun retrieve-instances (class &rest args)
   (or (apply #'mito:retrieve-dao class args)
-      (error resource-not-found :resource class :indicator args)))
+      (error 'resource-not-found :resource class :indicator args)))
 
 (defun include-foreign-fields (object &rest field-value-list)
   (let ((class (class-of object)))
