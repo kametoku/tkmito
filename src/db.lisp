@@ -44,12 +44,13 @@
 (defun rollback ()
   (dbi:rollback (connected-p)))
 
-(defgeneric execute (sql)
-  (:method ((sql string))
+(defgeneric execute (sql &optional params)
+  (:method ((sql string) &optional params)
     (let ((query (dbi:prepare mito:*connection* sql)))
-      (dbi:execute query)))
-  (:method ((sql sxql.statement:select-statement))
-    (execute (sxql:yield sql))))
+      (dbi:execute query params)))
+  (:method ((sql sxql.statement:select-statement) &optional params)
+    (declare (ignore params))
+    (apply #'execute (multiple-value-list (sxql:yield sql)))))
 
 (defun fetch (result)
   (dbi:fetch result))
