@@ -16,8 +16,9 @@
            #:with-search-parameters))
 (in-package :tkmito.search)
 
-(defun table-name (class)
-  (mito.class:table-name (find-class class)))
+(defgeneric table-name (class)
+  (:method (class)
+    (mito.class:table-name (find-class class))))
 
 (defun %table-column-name (table-name column-name)
   (let ((column (format nil "~A.~A" table-name column-name)))
@@ -108,6 +109,12 @@ searched for.")
     ;; fields: ((:distinct :{table-name}.*))
     (nconc fields additonal-fields)))
 
+(defun select-by-sql (class sql)
+  (if (eql (type-of (find-class class))
+           'mito.dao.table:dao-table-class)
+      (mito.dao:select-by-sql class sql)
+      (tkmito.db:fetch-all (tkmito.db:execute sql))))
+
 (defun select (class &optional fields &rest clauses)
   (let ((sql (sxql:select (or fields (all-fields class))
                (sxql:from (sxql:make-sql-symbol (table-name class)))))
@@ -119,7 +126,7 @@ searched for.")
           else
             if clause
               do (sxql:add-child sql clause))
-    (let ((results (mito.dao:select-by-sql class sql)))
+    (let ((results (select-by-sql class sql)))
       (dolist (foreign-class include-classes)
         (if (consp foreign-class)
             (mito:include-foreign-objects
@@ -129,18 +136,33 @@ searched for.")
              (mito.util:ensure-class foreign-class) results)))
       (values results sql))))
 
+(defun make-fields-from-group-by (group-by)
+  (let* ((expressions
+           (sxql.sql-type::expression-list-clause-expressions group-by))
+         (args (mapcar #'identity expressions)))
+    (sxql:make-clause :fields
+                      `(:as (:count (:distinct ,(car args))
+                                    ,@(cdr args))
+                        :count))))
+
 (defun count-all (class sql)
   "Count the number of records witout offset and limit restrictins from sql."
-  (let* ((column (if (keywordp class)
+  (let* ((sql-children (slot-value sql 'sxql.statement::children))
+         (group-by (find-if #'sxql.clause::group-by-clause-p sql-children))
+         (column (if (keywordp class)
                      class
                      (tkutil:string-to-keyword
                       (concatenate 'string (table-name class) ".id"))))
-         (count-sql (sxql:select `((:as (:count (:distinct ,column)) :count)))))
+         (count-sql (if group-by
+                        (sxql:select (make-fields-from-group-by group-by))
+                        (sxql:select `((:as (:count (:distinct ,column)) :count))))))
     (loop for clause in (slot-value sql 'sxql.statement::children)
           for clause-type = (type-of clause)
           unless (member clause-type '(sxql.clause::fields-clause
                                        sxql.clause::limit-clause
-                                       sxql.clause::offset-clause))
+                                       sxql.clause::offset-clause
+                                       sxql.clause::order-by-clause
+                                       sxql.clause::group-by-clause))
             do (sxql:add-child count-sql clause))
     (let* ((result (mito:retrieve-by-sql count-sql))
            (count (getf (first result) :count)))
