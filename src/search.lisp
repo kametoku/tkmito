@@ -210,7 +210,7 @@ filter-option ::= column [func [op]]"
     `(destructuring-bind (&key query
                             ,@filter-parameters
                             date-column start-date end-date
-                            (sort-column :id) sort-direction
+                            sort-column sort-direction
                             (page 1) (per-page 100)
                             (offset (if page (* (1- page) per-page) 0))
                             (limit (or per-page 100)))
