@@ -103,11 +103,11 @@ searched for.")
 ;;   (cons :includes (mapcar #'mito.util:ensure-class classes)))
   (cons :includes classes))
 
-(defun all-fields (object-type &rest additonal-fields)
+(defun all-fields (object-type &optional additonal-fields)
   (let* ((table-name (table-name object-type))
          (fields `((:distinct ,(%table-column-name table-name "*")))))
     ;; fields: ((:distinct :{table-name}.*))
-    (apply #'nconc fields additonal-fields)))
+    (nconc fields (tkutil:ensure-list additonal-fields))))
 
 (defun select-by-sql (class sql)
   (if (eql (type-of (find-class class))
