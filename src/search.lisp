@@ -216,11 +216,15 @@ filter-option ::= column [func [op]]"
                             (limit (or per-page 100)))
          ,args
        (let ((,fields (all-fields ,object-type sort-column))
-             (,clauses (list (sxql:offset offset) (sxql:limit limit)
-                             (query query ,object-type)
-                             ,@filter-wheres
-                             (where-date date-column start-date end-date)
-                             (order-by sort-column sort-direction))))
+             (,clauses
+               (list (cond ((and limit offset) (sxql:limit offset limit))
+                           (limit (sxql:limit limit))
+                           (offset
+                            (error "Argument LIMIT cannot be nil if OFFSET is non-nil.")))
+                     (query query ,object-type)
+                     ,@filter-wheres
+                     (where-date date-column start-date end-date)
+                     (order-by sort-column sort-direction))))
          (progn ,@body)))))
 
 ;; (defun search-users (&key id name email is-admin
