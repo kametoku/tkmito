@@ -7,6 +7,7 @@
            #:where
            #:where-date
            #:order-by
+           #:limit
            #:includes
            #:select
            #:with-paginate
@@ -98,6 +99,11 @@ searched for.")
   (when sort-column
     (unless sort-direction (setf sort-direction :asc))
     (sxql:order-by (list sort-direction sort-column))))
+
+(defun limit (limit &optional offset)
+  (cond ((and limit offset) (sxql:limit offset limit))
+        (limit (sxql:limit limit))
+        (offset (error "Argument LIMIT cannot be nil if OFFSET is non-nil."))))
 
 (defun includes (&rest classes)
 ;;   (cons :includes (mapcar #'mito.util:ensure-class classes)))
@@ -217,10 +223,7 @@ filter-option ::= column [func [op]]"
          ,args
        (let ((,fields (all-fields ,object-type sort-column))
              (,clauses
-               (list (cond ((and limit offset) (sxql:limit offset limit))
-                           (limit (sxql:limit limit))
-                           (offset
-                            (error "Argument LIMIT cannot be nil if OFFSET is non-nil.")))
+               (list (limit limit offset)
                      (query query ,object-type)
                      ,@filter-wheres
                      (where-date date-column start-date end-date)
