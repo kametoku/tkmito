@@ -107,7 +107,7 @@ searched for.")
   (let* ((table-name (table-name object-type))
          (fields `((:distinct ,(%table-column-name table-name "*")))))
     ;; fields: ((:distinct :{table-name}.*))
-    (nconc fields additonal-fields)))
+    (apply #'nconc fields additonal-fields)))
 
 (defun select-by-sql (class sql)
   (if (eql (type-of (find-class class))
